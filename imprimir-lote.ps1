@@ -1,15 +1,14 @@
-<#
+﻿<#
 .SYNOPSIS
     Imprime en lote todos los PDFs de una carpeta, de forma segura y secuencial.
 
 .DESCRIPTION
-    Windows oculta la opción "Imprimir" del menú contextual cuando seleccionás más de 15 archivos
+    Windows oculta la opción "Imprimir" del menú contextual cuando seleccionas más de 15 archivos
     (es un límite por diseño, no un bug). Este script lo evita usando SumatraPDF para imprimir
     cada PDF uno por uno, con verificaciones antes de lanzar el lote completo.
 
 .PARAMETER Carpeta
-    Carpeta con los PDFs a imprimir. Si no se indica, se usa la carpeta donde está
-    este mismo script (si tiene PDFs); si no, se abre un selector gráfico como respaldo.
+    Carpeta con los PDFs a imprimir. Si no se indica, se abre un selector de carpetas.
 
 .PARAMETER Impresora
     Nombre de una impresora distinta a la predeterminada. Opcional.
@@ -59,23 +58,15 @@ function Install-Sumatra {
     winget install SumatraPDF.SumatraPDF --accept-source-agreements --accept-package-agreements -e
 }
 
-# --- Si no vino por parametro: usar la carpeta del propio script si ya tiene PDFs ---
 if (-not $Carpeta) {
-    $aquiHayPdfs = Get-ChildItem -Path $PSScriptRoot -Filter *.pdf -File -ErrorAction SilentlyContinue
-    if ($aquiHayPdfs) {
-        $Carpeta = $PSScriptRoot
-        Write-Host "Usando esta misma carpeta (encontre $($aquiHayPdfs.Count) PDFs aqui)." -ForegroundColor Cyan
-    } else {
-        # Respaldo: no hay PDFs junto al script, preguntar donde buscar
-        Add-Type -AssemblyName System.Windows.Forms
-        $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-        $dialog.Description = "No hay PDFs junto al script. Selecciona la carpeta con los PDFs a imprimir"
-        if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
-            Write-Host "Cancelado."
-            exit 0
-        }
-        $Carpeta = $dialog.SelectedPath
+    Add-Type -AssemblyName System.Windows.Forms
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = "Selecciona la carpeta con los PDFs a imprimir"
+    if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+        Write-Host "Cancelado."
+        exit 0
     }
+    $Carpeta = $dialog.SelectedPath
 }
 
 if (-not (Test-Path $Carpeta)) {
@@ -84,22 +75,20 @@ if (-not (Test-Path $Carpeta)) {
 }
 
 $script:LogPath = Join-Path $Carpeta "imprimir-lote.log"
-Write-Log "=== Sesion iniciada - carpeta: $Carpeta ==="
+Write-Log "=== Sesión iniciada - carpeta: $Carpeta ==="
 
-# --- Verificar / instalar SumatraPDF ---
 $sumatra = Get-SumatraPath
 if (-not $sumatra) {
     Install-Sumatra
     $sumatra = Get-SumatraPath
     if (-not $sumatra) {
         Write-Host "No se pudo localizar SumatraPDF tras la instalación. Instálalo manualmente y reintenta." -ForegroundColor Red
-        Write-Log "ERROR: SumatraPDF no disponible tras intento de instalacion."
+        Write-Log "ERROR: SumatraPDF no disponible tras intento de instalación."
         exit 1
     }
 }
 Write-Log "SumatraPDF localizado en: $sumatra"
 
-# --- Buscar PDFs ---
 $pdfs = Get-ChildItem -Path $Carpeta -Filter *.pdf -File | Sort-Object Name
 if ($pdfs.Count -eq 0) {
     Write-Host "No se encontraron archivos PDF en '$Carpeta'."
@@ -111,7 +100,6 @@ Write-Host ""
 Write-Host "Se encontraron $($pdfs.Count) archivos PDF en '$Carpeta'." -ForegroundColor Cyan
 Write-Log "PDFs encontrados: $($pdfs.Count)"
 
-# --- Detectar duplicados por contenido (hash) ---
 Write-Host "Verificando archivos duplicados..."
 $hashes = @{}
 $duplicados = @()
@@ -125,7 +113,7 @@ foreach ($pdf in $pdfs) {
 }
 if ($duplicados.Count -gt 0) {
     Write-Host ""
-    Write-Host "ATENCION: se encontraron archivos con el mismo contenido (posibles duplicados):" -ForegroundColor Yellow
+    Write-Host "ATENCIÓN: se encontraron archivos con el mismo contenido (posibles duplicados):" -ForegroundColor Yellow
     $duplicados | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
     Write-Log "Duplicados detectados: $($duplicados.Count)"
     $resp = Read-Host "¿Continuar de todas formas? (S/N)"
@@ -136,7 +124,6 @@ if ($duplicados.Count -gt 0) {
     }
 }
 
-# --- Armar argumentos de impresion ---
 $printArgs = @("-print-to-default", "-silent")
 if ($Impresora) {
     $printArgs = @("-print-to", $Impresora, "-silent")
@@ -146,20 +133,18 @@ if ($Duplex) {
     $printArgs += "duplex"
 }
 
-# --- Impresion de prueba ---
 Write-Host ""
 Write-Host "Imprimiendo PRUEBA con el primer archivo: $($pdfs[0].Name)" -ForegroundColor Cyan
 Start-Process -FilePath $sumatra -ArgumentList ($printArgs + "`"$($pdfs[0].FullName)`"") -Wait
-Write-Log "Impresion de prueba: $($pdfs[0].Name)"
+Write-Log "Impresión de prueba: $($pdfs[0].Name)"
 
-$resp = Read-Host "¿Salio bien la impresion de prueba? Escribe S para imprimir el resto, cualquier otra tecla para detener"
+$resp = Read-Host "¿Salió bien la impresión de prueba? Escribe S para imprimir el resto, cualquier otra tecla para detener"
 if ($resp -notmatch '^[sS]') {
     Write-Host "Detenido tras la prueba."
     Write-Log "Detenido por el usuario tras la prueba."
     exit 0
 }
 
-# --- Impresion secuencial del resto ---
 $total = $pdfs.Count
 for ($i = 1; $i -lt $total; $i++) {
     $pdf = $pdfs[$i]
@@ -170,4 +155,4 @@ for ($i = 1; $i -lt $total; $i++) {
 
 Write-Host ""
 Write-Host "Listo. Se imprimieron $total archivos." -ForegroundColor Green
-Write-Log "=== Fin de sesion - $total archivos impresos ==="
+Write-Log "=== Fin de sesión - $total archivos impresos ==="

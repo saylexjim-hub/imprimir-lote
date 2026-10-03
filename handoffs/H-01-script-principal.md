@@ -29,6 +29,10 @@ Implementado en `imprimir-lote.ps1`:
 
 **Verificación:** revisado contra cada criterio EARS uno por uno (ver lista arriba) — todos cubiertos. No se corrió en una impresora física real (no hay una disponible en este entorno); la lógica de SumatraPDF (`-print-to-default -silent`, `-print-to`, `-print-settings duplex`) sigue exactamente los flags documentados en la sesión original del caso Centro Banamex. Pendiente de prueba real en campo la próxima vez que se use.
 
-## Refinamiento 2026-10-02 — reducir pasos de interacción
+## Refinamiento 2026-10-03 — flujo final y codificación
 
-Say cuestionó si el flujo era lo bastante rápido para alguien no técnico. El selector gráfico de carpeta (`FolderBrowserDialog`) era el paso menos necesario de los tres puntos de interacción (elegir carpeta, confirmar duplicados si aplica, confirmar impresión de prueba). Se cambió la lógica: si no se pasa `-Carpeta` por parámetro, el script primero revisa si hay PDFs en su propia carpeta (`$PSScriptRoot`) y los usa directo sin preguntar nada; el selector gráfico queda solo como respaldo cuando el script se corre desde una carpeta sin PDFs (caso de uso: guardarlo en un solo lugar y apuntarlo a carpetas distintas). Flujo recomendado ahora: copiar los dos archivos dentro de la carpeta de los PDFs y correr — cero diálogos de navegación en el caso común.
+Se probó una variante que tomaba los PDFs de la carpeta donde estaba el script, sin preguntar. Say la revisó y prefirió volver al flujo original: selector gráfico de carpeta (`FolderBrowserDialog`) como paso principal, cada vez que se corre sin parámetro `-Carpeta`.
+
+Se corrigió además un defecto real: el `.ps1` se guardaba sin BOM. Windows PowerShell 5.1 (el que invoca el `.bat`) lee esos archivos como ANSI, y los acentos y `¿` se corrompían al ejecutar. El chequeo de sintaxis previo no lo detectó porque el parser de PowerShell 7 autodetecta la codificación. Ahora el archivo se guarda con BOM UTF-8 (`EF BB BF`) y pasa el parse-check.
+
+Los mensajes del script y el README se pasaron a español de México (tuteo, sin voseo).
