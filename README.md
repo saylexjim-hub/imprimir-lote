@@ -6,16 +6,20 @@ Este script lo resuelve: imprime todos los PDFs de una carpeta, uno por uno, de 
 
 ## Cómo usarlo
 
-1. Descargá o cloná este repositorio.
-2. Hacé doble clic en **`imprimir-lote.bat`**.
-3. Seleccioná la carpeta con tus PDFs cuando se abra la ventana. El script:
+1. Descargá los dos archivos desde [la última versión](../../releases/latest): `imprimir-lote.bat` e `imprimir-lote.ps1`.
+2. Copialos **dentro de la misma carpeta donde están tus PDFs**.
+3. Hacé doble clic en **`imprimir-lote.bat`**.
+4. **Windows va a mostrar una pantalla azul que dice "Windows protegió tu PC".** Esto es normal — pasa con cualquier programa nuevo que no sea de una tienda oficial, no significa que algo esté mal. Hacé clic en **"Más información"** y después en **"Ejecutar de todas formas"**.
+5. El script arranca solo, sin preguntarte dónde están los PDFs (ya los encontró en su propia carpeta):
    - instala el lector necesario (SumatraPDF) si no lo tenés — gratis y sin publicidad,
    - te dice cuántos PDFs encontró,
    - te avisa si hay archivos repetidos,
    - imprime uno de prueba y te pregunta si salió bien antes de imprimir el resto,
    - deja un registro (`imprimir-lote.log`) de todo lo que imprimió.
 
-No necesitás saber de computadoras para usarlo — solo seguir lo que te va preguntando en pantalla.
+¿Preferís tener el script guardado en un solo lugar y usarlo contra distintas carpetas sin copiarlo cada vez? Si lo corrés desde una carpeta sin PDFs, se abre un selector para que elijas cuál usar — es el único caso en el que te pregunta.
+
+No necesitás saber de computadoras para usarlo — solo seguir lo que te va preguntando en pantalla. Si te saltaste el paso 4 y no pasó nada al hacer doble clic, revisá si la pantalla azul se abrió detrás de otras ventanas.
 
 ## Por qué existe
 

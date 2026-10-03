@@ -8,7 +8,8 @@
     cada PDF uno por uno, con verificaciones antes de lanzar el lote completo.
 
 .PARAMETER Carpeta
-    Carpeta con los PDFs a imprimir. Si no se indica, se abre un selector gráfico.
+    Carpeta con los PDFs a imprimir. Si no se indica, se usa la carpeta donde está
+    este mismo script (si tiene PDFs); si no, se abre un selector gráfico como respaldo.
 
 .PARAMETER Impresora
     Nombre de una impresora distinta a la predeterminada. Opcional.
@@ -58,16 +59,23 @@ function Install-Sumatra {
     winget install SumatraPDF.SumatraPDF --accept-source-agreements --accept-package-agreements -e
 }
 
-# --- Selector gráfico de carpeta si no vino por parámetro ---
+# --- Si no vino por parametro: usar la carpeta del propio script si ya tiene PDFs ---
 if (-not $Carpeta) {
-    Add-Type -AssemblyName System.Windows.Forms
-    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dialog.Description = "Selecciona la carpeta con los PDFs a imprimir"
-    if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
-        Write-Host "Cancelado."
-        exit 0
+    $aquiHayPdfs = Get-ChildItem -Path $PSScriptRoot -Filter *.pdf -File -ErrorAction SilentlyContinue
+    if ($aquiHayPdfs) {
+        $Carpeta = $PSScriptRoot
+        Write-Host "Usando esta misma carpeta (encontre $($aquiHayPdfs.Count) PDFs aqui)." -ForegroundColor Cyan
+    } else {
+        # Respaldo: no hay PDFs junto al script, preguntar donde buscar
+        Add-Type -AssemblyName System.Windows.Forms
+        $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dialog.Description = "No hay PDFs junto al script. Selecciona la carpeta con los PDFs a imprimir"
+        if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+            Write-Host "Cancelado."
+            exit 0
+        }
+        $Carpeta = $dialog.SelectedPath
     }
-    $Carpeta = $dialog.SelectedPath
 }
 
 if (-not (Test-Path $Carpeta)) {
